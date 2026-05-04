@@ -6582,12 +6582,12 @@ const tkTours = {
   compile: [
     { text: '<b>TRKLS</b> is a tool for<br>creating sample patches<br>for <a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices',
       anchor: null, number: null },
-    { text: '<b>1. Pick your device</b><br>Use arrows',
+    { text: '<b>1. Pick your device</b><br>using < & > arrows',
       anchor: 'dev-thumb', number: 1, offset: [0, 35] },
-    { text: '<b>2. Add audio files</b><br>Then select one<br>from the list',
+    { text: '<b>2. Add audio files</b><br>then select one<br>from the list in the <br> file library',
       anchorSelector: '.lbtn:not(.m)', number: 2, offset: [0, 7] },
     { // Step 3: combined "Select a chunk + Send to canvas". Two triangles (3a/3b).
-      text: '<b>3. Select a Chunk/Send to Canvas</b><br>Click and drag on the waveform (3a),<br>use mouse wheel to zoom and playback controls to review audio.<br>Drop selection to canvas (3b).<br>Repeat to fill up the sample patch',
+      text: '<b>3. Select a Chunk/Send to Canvas</b><br>Click and drag on the waveform (3a),<br>use mouse wheel to zoom, and playback controls to review audio.<br>Drop selection to canvas (3b).<br>Repeat to fill up the sample patch',
       pointers: [
         // 3a: source waveform (was triangle 3 in previous version)
         { anchor: 'src-area',     label: '3a', offset: [0, 30] },
@@ -6596,11 +6596,11 @@ const tkTours = {
       ],
       mediumPopup: true
     },
-    { text: '<b>4. Switch tab</b><br>To assign chunks<br>to device keys',
+    { text: '<b>4. Switch tab</b><br>to assign chunks<br>to device keys',
       anchorSelector: '[data-tab="assign"]', number: 4, offset: [0, 12], noBack: true }
   ],
   assign: [
-    { text: '<b>5. Assign Keys</b> by clicking a chunk, then a key,<br>or vice versa. (Use control<br>buttons for playback)',
+    { text: '<b>5. Assign Keys</b><br>by clicking a chunk, then a key,<br>or vice versa. (Use control<br>buttons for playback)',
       // Two simultaneous triangles via the pointers array
       pointers: [
         // 5a: pointing at the canvas region area (click-a-chunk)
@@ -6622,9 +6622,9 @@ const tkTours = {
     { // Step 6: Export & Transfer — text varies by device (selectable via tabs).
       // The .text shown is determined by tkActiveDeviceTab; set via tkPickDeviceTab().
       textPerDevice: {
-        op1:      '<b>6. Export and Transfer / OP-1</b><br>Hit Export to download .aif file.<br>Connect OP-1 via USB,<br>press SHIFT+COM, then 3 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
-        op1field: '<b>6. Export and Transfer / OP-1 field</b><br>Hit Export to download .aif file.<br>Download and install<br>Teenage Engineering Field Kit (<a href="https://teenage.engineering/guides/fieldkit?srsltid=AfmBOopgv5gRuOvaEpqKVgXR-FcW8xqdeKUzGFuLnou-Pohb3a4_yPTn" target="_blank" rel="noopener">here</a>).<br>Connect OP-1 Field via USB,<br>press SHIFT+COM, then T4 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
-        opz:      '<b>6. Export and Transfer / OP-Z</b><br>Hit Export to download .aif file.<br>Hold track button and power on OP-Z.<br>Connect OP-Z via USB.<br>Drop the file into<br>samplepacks>track(1-4)>folder<br>(01-10 - choose an empty folder,<br>one aif per folder), eject disk'
+        op1:      '<b>6. Export and Transfer / OP-1</b><br>Hit Export(6) to download .aif file.<br>Connect OP-1 via USB,<br>press SHIFT+COM, then 3 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
+        op1field: '<b>6. Export and Transfer / OP-1 field</b><br>Hit Export(6) to download .aif file.<br>Download and install<br>Teenage Engineering Field Kit (<a href="https://teenage.engineering/guides/fieldkit?srsltid=AfmBOopgv5gRuOvaEpqKVgXR-FcW8xqdeKUzGFuLnou-Pohb3a4_yPTn" target="_blank" rel="noopener">here</a>).<br>Connect OP-1 Field via USB,<br>press SHIFT+COM, then T4 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
+        opz:      '<b>6. Export and Transfer / OP-Z</b><br>Hit Export(6) to download .aif file.<br>Hold track button and power on OP-Z.<br>Connect OP-Z via USB.<br>Drop the file into<br>samplepacks>track(1-4)>folder<br>(01-10 - choose an empty folder,<br>one aif per folder), eject disk'
       },
       pointers: [
         { anchor: 'ak-export-btn', label: '6', offset: [0, 12] }
