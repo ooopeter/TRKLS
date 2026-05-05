@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>TRKLS</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8ZGZKCNBM9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-8ZGZKCNBM9');
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Exo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    height:100%;
+    background:#4D4D4D;
+    color:#E5E5E5;
+    font-family:'Exo',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  /* Layout: centered card */
+  body{
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    min-height:100vh;
+    min-height:100dvh; /* better mobile viewport handling */
+  }
+  .card{
+    width:100%;
+    max-width:420px;
+    background:#383838;
+    border:1px solid #2A2A2A;
+    border-radius:8px;
+    padding:32px 28px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    text-align:center;
+  }
+  .logo{
+    font-family:'Exo',sans-serif;
+    font-weight:700;
+    font-size:42px;
+    letter-spacing:2px;
+    color:#FFC800;
+    margin-bottom:8px;
+  }
+  .tagline{
+    font-size:13px;
+    font-weight:300;
+    color:#999;
+    letter-spacing:0.5px;
+    margin-bottom:24px;
+  }
+  .message{
+    font-size:15px;
+    font-weight:400;
+    line-height:1.5;
+    color:#E5E5E5;
+    margin-bottom:28px;
+  }
+  .message b{font-weight:600;color:#FFC800;}
+  .message a{color:#FFC800;text-decoration:underline;text-underline-offset:2px;}
+  .message a:hover{color:#fff;}
+  .btn{
+    display:inline-block;
+    background:#FFC800;
+    color:#000;
+    font-family:'Exo',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    text-decoration:none;
+    padding:14px 28px;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    transition:transform 0.12s, background 0.12s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:hover{background:#FFD633;}
+  .btn:active{transform:scale(0.97);}
+  .footer{
+    margin-top:24px;
+    font-size:11px;
+    color:#666;
+    letter-spacing:0.3px;
+  }
+  .footer a{color:#888;text-decoration:none;}
+  .footer a:hover{color:#FFC800;}
+  /* Hidden by default; revealed only if we determine it's a touch device */
+  body.show-warning .card{display:block;}
+  body:not(.show-warning) .card{display:none;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">trkls</div>
+  <div class="tagline">sample patches for TE devices</div>
+  <div class="message">
+    <b>TRKLS</b> is a tool for creating sample patches for <a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices (OP-1, OP-1 Field, OP-Z).<br><br>
+    Use of a desktop browser is recommended.
+  </div>
+  <button class="btn" id="proceed-btn">Proceed Anyway</button>
+  <div class="footer">
+    Illustration: <a href="https://peteroumanski.com" target="_blank" rel="noopener">peteroumanski.com</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Where the actual TRKLS app lives (rename your existing file to app.html
+  // and put this file at index.html, or update this URL to wherever you host it).
+  var APP_URL = 'app.html';
+  var SESSION_KEY = 'trkls.touch.proceeded';
+
+  // Detection: combine multiple signals for robustness.
+  //   - 'pointer: coarse' media query: primary input is finger/stylus (vs mouse)
+  //   - touch capability: ontouchstart / maxTouchPoints
+  //   - narrow viewport: under ~1100px width is plausibly tablet/phone
+  // We treat a device as "touch-only" if it has a coarse pointer AND
+  // either narrow viewport OR no fine pointer at all.
+  function isTouchDevice() {
+    var hasCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    var hasFine   = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    var hasTouch  = ('ontouchstart' in window) ||
+                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+    var narrow    = window.innerWidth < 1100;
+
+    // Pure desktop: has fine pointer, no touch → definitely desktop
+    if (hasFine && !hasTouch) return false;
+    // Coarse pointer (phone/tablet primary input) → touch
+    if (hasCoarse) return true;
+    // Has touch + narrow viewport (catches some hybrid devices in tablet mode)
+    if (hasTouch && narrow) return true;
+    return false;
+  }
+
+  // Decide flow: if user already chose to proceed this session, OR they're
+  // on desktop, redirect immediately. Otherwise show the warning.
+  function init() {
+    var alreadyProceeded = false;
+    try { alreadyProceeded = sessionStorage.getItem(SESSION_KEY) === '1'; } catch(e) {}
+
+    if (alreadyProceeded || !isTouchDevice()) {
+      // Skip the gate
+      window.location.replace(APP_URL);
+      return;
+    }
+    // Touch device, first visit this session → show the warning
+    document.body.classList.add('show-warning');
+    var btn = document.getElementById('proceed-btn');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        try { sessionStorage.setItem(SESSION_KEY, '1'); } catch(e) {}
+        window.location.href = APP_URL;
+      });
+    }
+  }
+
+  // Run after DOM is parsed
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
