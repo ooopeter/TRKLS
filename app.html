@@ -376,8 +376,8 @@ iframe#bmc-iframe{
 
 /* ── info bar ── */
 .ibar{height:81px;flex-shrink:0;display:flex;align-items:center;padding:0 16px;gap:28px;}
-.ifn{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;flex-shrink:0;}
-.ifn.empty{font-size:11px;font-weight:300;color:var(--muted);letter-spacing:.5px;}
+.ifn{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.ifn.empty{font-size:13px;font-weight:300;color:var(--muted);letter-spacing:.5px;}
 .im{font-size:13px;font-weight:300;color:var(--muted);white-space:nowrap;}
 .im b{font-weight:400;color:var(--text);}
 
@@ -5827,11 +5827,18 @@ async function exportAiff() {
       });
     }
 
-    // Generate a unique patch name so multiple exports can coexist on the OP-1.
-    // The OP-1 uses the JSON "name" field as an internal identifier — duplicates
-    // in the same folder cause "Failed to Create Drum Patch".
-    const ts   = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-    const patchName = 'trkls_' + ts;
+    // Generate a unique patch name per export — this is REQUIRED to prevent
+    // OP-1's "Failed to Create Drum Patch" error when multiple files coexist
+    // in the same folder. The OP-1 indexes patches by their JSON "name" field,
+    // and identical names cause the second file to fail.
+    //
+    // IMPORTANT: The OP-1 firmware truncates the name field to ~10-12 chars.
+    // Using a full ISO timestamp (25 chars) caused collisions after truncation.
+    // Base-36 epoch ms gives a compact 8-char unique ID that survives truncation.
+    const ts        = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+    const uid       = Date.now().toString(36);       // e.g. "lx5a2b3c" — ~8 chars, unique per ms
+    const patchName = 't_' + uid;                    // e.g. "t_lx5a2b3c" — 10 chars total
+    const fileName  = 'trkls_drum_' + ts + '.aif';   // human-readable filename (no length limit)
 
     const meta = {
       drum_version: 2, type: 'drum', name: patchName, octave: 0,
@@ -5844,8 +5851,11 @@ async function exportAiff() {
       lfo_params: [16000,16000,16000,16000,0,0,0,0]
     };
 
-    // JSON string — pad to ensure APPL chunk data has even byte length
-    let jsonStr = JSON.stringify(meta);
+    // JSON string — append trailing newline to match byte pattern observed
+    // in OP-1 native patches (reference files end with 0x0a, sometimes
+    // followed by 0x20 to keep APPL data even-aligned). Some firmware
+    // versions appear to require this.
+    let jsonStr = JSON.stringify(meta) + '\n';
     if ((4 + jsonStr.length) % 2 !== 0) jsonStr += ' ';
     const jsonBytes = new TextEncoder().encode(jsonStr);
 
@@ -5912,12 +5922,34 @@ async function exportAiff() {
     wb(audioBytes);
     wpad(ssndSize);
 
-    // ── STEP 5: Trigger download ──
+    // ── STEP 5: Save file ──
     const blob = new Blob([buf], { type: 'audio/aiff' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `trkls_drum_${ts}.aif`; a.click();
-    URL.revokeObjectURL(url);
+
+    if (window.showSaveFilePicker) {
+      // Native "Save As" dialog — user can rename and choose location
+      // Note: filename should avoid special characters and spaces for OP-1 compatibility
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: 'AIF Drum Patch (no special characters or spaces in name)',
+            accept: { 'audio/aiff': ['.aif'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch (saveErr) {
+        if (saveErr.name === 'AbortError') return; // user cancelled — not an error
+        throw saveErr;
+      }
+    } else {
+      // Fallback for Firefox/Safari: auto-download with preset name
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+    }
 
   } catch(err) {
     alert('Export failed: ' + err.message);
@@ -6626,7 +6658,7 @@ function initCanvases(){
 //   number: numeric badge inside triangle, or null to hide number entirely
 const tkTours = {
   compile: [
-    { text: '<b>TRKLS</b> is a tool for creating<br>sample patches for<br><a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices<br>(OP-1, OP-1 Field, OP-Z)',
+    { text: '<b>TRKLS</b> is a tool for<br>creating sample patches<br>for <a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices (OP-1, OP-1 Field, OP-Z)',
       anchor: null, number: null, firstButton: true },
     { text: '<b>1. Pick your device</b><br>using < & > arrows',
       anchor: 'dev-thumb', number: 1, offset: [0, 35] },
