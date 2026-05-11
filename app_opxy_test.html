@@ -3608,7 +3608,7 @@ my work here!
             <div class="tbar" id="src-ticks"></div>
             <canvas id="src-wcanv" class="wcanv"></canvas>
             <canvas id="src-ocanv" class="ocanv"></canvas>
-            <div class="wph" id="src-ph">DROP AUDIO SOURCE FILE HERE</div>
+            <div class="wph" id="src-ph">← DROP AUDIO SOURCE FILES TO LIBRARY FIELD</div>
             <div class="dov" id="src-dov">drop to load</div>
           </div>
           <div class="srow" id="src-srow">
@@ -9113,7 +9113,7 @@ function initCanvases(){
 //   number: numeric badge inside triangle, or null to hide number entirely
 const tkTours = {
   compile: [
-    { text: '<b>TRKLS</b> is a tool for<br>creating sample patches<br>for <a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices (OP-1, OP-1 Field, OP-Z, OP-XY)',
+    { text: '<b>TRKLS</b> is a tool for<br>creating sample patches<br>for <a href="https://teenage.engineering/" target="_blank" rel="noopener">Teenage Engineering</a> devices (OP-1, OP-1 Field,<br>OP-Z, OP-XY)',
       anchor: null, number: null, firstButton: true },
     { text: '<b>1. Pick your device</b><br>using < & > arrows',
       anchor: 'dev-thumb', number: 1, offset: [0, 35] },
@@ -9158,7 +9158,7 @@ const tkTours = {
         op1:      '<b>6. Export and Transfer / OP-1</b><br>Hit Export(6) to download .aif file.<br>Connect OP-1 via USB,<br>press SHIFT+COM, then 3 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
         op1field: '<b>6. Export and Transfer / OP-1 field</b><br>Hit Export(6) to download .aif file.<br>Download and install<br>Teenage Engineering Field Kit (<a href="https://teenage.engineering/guides/fieldkit?srsltid=AfmBOopgv5gRuOvaEpqKVgXR-FcW8xqdeKUzGFuLnou-Pohb3a4_yPTn" target="_blank" rel="noopener">here</a>).<br>Connect OP-1 Field via USB,<br>press SHIFT+COM, then T4 to mount as disk.<br>Drop the file into drum>trkls folder, eject disk',
         opz:      '<b>6. Export and Transfer / OP-Z</b><br>Hit Export(6) to download .aif file.<br>Hold track button and power on OP-Z.<br>Connect OP-Z via USB.<br>Drop the file into<br>samplepacks>track(1-4)>folder<br>(01-10 - choose an empty folder,<br>one aif per folder), eject disk',
-        opxy:     '<b>6. Export and Transfer / OP-XY</b><br>Hit Export(6) to download a .preset.zip file.<br>Unzip it — you\'ll get a folder ending in .preset.<br>Connect OP-XY via USB-C — it mounts as a drive.<br>Drop the .preset folder into the<br>presets/ directory, eject disk'
+        opxy:     '<b>6. Export and Transfer / OP-XY</b><br>Hit Export(6) to download a .preset.zip file,<br> unzip it — to get a folder ending in .preset.<br> Connect OP-XY via USB-C, press COM,<br> then M4 to mount as disk<br> Drop the .preset folder into the presets/user <br> directory, eject disk'
       },
       pointers: [
         { anchor: 'ak-export-btn', label: '6', offset: [0, 12] }
