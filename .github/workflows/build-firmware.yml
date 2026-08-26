@@ -1,0 +1,61 @@
+name: Build RELIC firmware
+
+# Runs when you push a new Relic.cpp (or press Run workflow by hand).
+on:
+  push:
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/build-firmware.yml'
+  workflow_dispatch:        # lets you trigger it manually from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Install the ARM cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi make
+
+      - name: Cache libDaisy build
+        id: cache-libdaisy
+        uses: actions/cache@v4
+        with:
+          path: libDaisy
+          key: libdaisy-${{ runner.os }}-v1
+
+      - name: Clone and build libDaisy (first run only, then cached)
+        if: steps.cache-libdaisy.outputs.cache-hit != 'true'
+        run: |
+          git clone --recursive --depth 1 https://github.com/electro-smith/libDaisy.git
+          make -C libDaisy -j"$(nproc)"
+
+      - name: Build Relic
+        run: |
+          mkdir -p build-tmp
+          cp firmware/Relic.cpp build-tmp/
+          # Makefile is written here so it always points at the right libDaisy
+          cat > build-tmp/Makefile <<'EOF'
+          TARGET = Relic
+          CPP_SOURCES = Relic.cpp
+          LIBDAISY_DIR = ../libDaisy
+          SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
+          include $(SYSTEM_FILES_DIR)/Makefile
+          EOF
+          make -C build-tmp
+
+      - name: Show the binary size
+        run: |
+          ls -lh build-tmp/build/Relic.bin
+          arm-none-eabi-size build-tmp/build/Relic.elf
+
+      - name: Upload Relic.bin
+        uses: actions/upload-artifact@v4
+        with:
+          name: Relic-firmware
+          path: build-tmp/build/Relic.bin
+          if-no-files-found: error
