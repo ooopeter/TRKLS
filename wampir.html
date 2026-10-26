@@ -1,0 +1,371 @@
+<title>Вампир · БК-0010</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single BK-0010 monitor on a graphite desk; the screen is the page, controls sit under it like a keyboard strip. */
+:root{
+  --desk:#17181b;        /* graphite case */
+  --bezel:#26282d;
+  --bezel-edge:#3a3d44;
+  --ink:#d9d4c7;         /* label text, warm off-white */
+  --dim:#8a8778;
+  --signal:#e2412f;      /* BK red */
+  --key:#2f3238;
+  --key-top:#3b3f46;
+  --display:"Russo One","Arial Narrow",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--desk);color:var(--ink);font-family:var(--mono);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 28px;box-sizing:border-box}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,44px);letter-spacing:.06em;margin:0;line-height:1;text-wrap:balance}
+h1 span{color:var(--signal)}
+.meta{font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.monitor{background:linear-gradient(180deg,var(--bezel-edge),var(--bezel) 14%);border-radius:18px;padding:clamp(10px,2.4vw,26px);
+  box-shadow:0 30px 60px -30px #000,inset 0 1px 0 #ffffff14}
+.screen{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:1024/720;max-width:100%;cursor:pointer;
+  box-shadow:inset 0 0 0 2px #000}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,#0000 0 2px,#00000026 2px 3px),radial-gradient(120% 100% at 50% 50%,#0000 60%,#0000006b);}
+.plate{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.badge{font-family:var(--display);font-size:13px;letter-spacing:.18em;color:var(--dim)}
+.badge b{color:var(--signal);font-weight:400}
+.status{font-size:12px;color:var(--dim);min-height:1.2em}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.toggles{display:flex;gap:8px;flex-wrap:wrap}
+button{font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--key-top);border:0;border-radius:6px;padding:9px 14px;cursor:pointer;
+  box-shadow:0 3px 0 var(--key),0 4px 8px -4px #000;letter-spacing:.04em}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--key)}
+button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+button[aria-pressed="true"]{color:var(--signal)}
+.keys{font-size:12.5px;color:var(--dim);line-height:1.7}
+.keys kbd{font-family:var(--mono);color:var(--ink);background:var(--key);border-radius:4px;padding:1px 6px}
+.pad{display:none;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+.dpad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,56px);gap:6px}
+.dpad button{padding:0;font-size:20px}
+.digits{display:none;gap:6px}
+.digits.on{display:flex}
+.digits button{width:48px;padding:12px 0}
+@media (pointer:coarse),(max-width:640px){.pad{display:flex}.keys{display:none}}
+.notes{font-size:12.5px;color:var(--dim);line-height:1.65;max-width:68ch}
+.notes p{margin:0 0 8px}
+@media (prefers-reduced-motion:reduce){button:active{transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ВАМ<span>П</span>ИР</h1>
+    <div class="meta" id="meta">А. Ю. Кузьмин · Рига 1986 · ФОКАЛ</div>
+  </header>
+
+  <div class="monitor">
+    <div class="screen" id="screen"><canvas id="cv" width="1024" height="720" aria-label="Game screen"></canvas></div>
+    <div class="plate"><div class="badge">ЭЛЕКТРОНИКА <b>БК</b>-0010</div><div class="status" id="status"></div></div>
+  </div>
+
+  <div class="bar">
+    <div class="toggles">
+      <button id="lang" type="button">EN / РУС</button>
+      <button id="snd" type="button" aria-pressed="true">Sound on</button>
+      <button id="restart" type="button">Restart</button>
+    </div>
+    <div class="keys" id="keys"></div>
+  </div>
+
+  <div class="pad" id="pad">
+    <div class="dpad">
+      <span></span><button type="button" data-k="26" aria-label="Up">▲</button><span></span>
+      <button type="button" data-k="8" aria-label="Left">◀</button><button type="button" data-k="32" aria-label="Stay">●</button><button type="button" data-k="25" aria-label="Right">▶</button>
+      <span></span><button type="button" data-k="27" aria-label="Down">▼</button><span></span>
+    </div>
+    <div class="digits" id="digits">
+      <button type="button" data-k="49">1</button><button type="button" data-k="50">2</button><button type="button" data-k="51">3</button><button type="button" data-k="52">4</button><button type="button" data-k="53">5</button>
+    </div>
+  </div>
+
+  <div class="notes" id="notes"></div>
+</div>
+
+<script>
+"use strict";
+const FONT={"0":[56,76,198,198,198,100,56,0],"1":[24,56,24,24,24,24,126,0],"2":[124,198,14,60,120,224,254,0],"3":[126,12,24,60,6,198,124,0],"4":[28,60,108,204,254,12,12,0],"5":[252,192,252,6,6,198,124,0],"6":[60,96,192,252,198,198,124,0],"7":[254,198,12,24,48,48,48,0],"8":[120,196,228,120,158,134,124,0],"9":[124,198,198,126,6,12,120,0],"!":[56,56,56,48,48,0,48,0],"\"":[108,108,108,0,0,0,0,0],"#":[108,254,108,108,108,254,108,0],"$":[16,124,208,124,22,252,16,0],"%":[98,164,200,16,38,74,140,0],"&":[112,216,216,112,218,204,126,0],"'":[48,48,48,0,0,0,0,0],"(":[12,24,48,48,48,24,12,0],")":[96,48,24,24,24,48,96,0],"*":[0,108,56,254,56,108,0,0],"+":[0,24,24,126,24,24,0,0],",":[0,0,0,0,0,48,48,96],"-":[0,0,0,126,0,0,0,0],".":[0,0,0,0,0,48,48,0],"/":[2,4,8,16,32,64,128,0],":":[0,48,48,0,48,48,0,0],";":[0,48,48,0,48,48,96,0],"<":[12,24,48,96,48,24,12,0],"=":[0,0,254,0,254,0,0,0],">":[96,48,24,12,24,48,96,0],"?":[124,254,198,12,56,0,56,0],"@":[124,130,186,170,190,128,124,0],"A":[56,108,198,198,254,198,198,0],"B":[252,198,198,252,198,198,252,0],"C":[60,102,192,192,192,102,60,0],"D":[248,204,198,198,198,204,248,0],"E":[254,192,192,252,192,192,254,0],"F":[254,192,192,252,192,192,192,0],"G":[62,96,192,206,198,102,62,0],"H":[198,198,198,254,198,198,198,0],"I":[126,24,24,24,24,24,126,0],"J":[6,6,6,6,6,198,124,0],"K":[198,204,216,240,248,220,206,0],"L":[96,96,96,96,96,96,126,0],"M":[198,238,254,214,214,198,198,0],"N":[198,230,246,222,206,198,198,0],"O":[124,198,198,198,198,198,124,0],"P":[252,198,198,198,252,192,192,0],"Q":[124,198,198,198,222,204,122,0],"R":[252,198,198,206,248,220,206,0],"S":[124,198,192,124,6,198,124,0],"T":[126,24,24,24,24,24,24,0],"U":[198,198,198,198,198,198,124,0],"V":[198,198,198,238,124,56,16,0],"W":[214,214,214,214,254,238,68,0],"X":[198,198,108,56,108,198,198,0],"Y":[102,102,102,60,24,24,24,0],"Z":[254,14,28,56,112,224,254,0],"[":[60,48,48,48,48,48,60,0],"\\":[128,64,32,16,8,4,2,0],"]":[120,24,24,24,24,24,120,0],"^":[56,108,0,0,0,0,0,0],"_":[0,0,0,0,0,0,0,254],"`":[16,8,0,0,0,0,0,0],"a":[0,0,124,6,126,198,126,0],"b":[192,192,252,198,198,198,124,0],"c":[0,0,126,192,192,192,126,0],"d":[6,6,126,198,198,198,126,0],"e":[0,0,124,198,254,192,124,0],"f":[14,24,126,24,24,24,24,0],"g":[0,0,126,198,198,126,6,124],"h":[192,192,252,198,198,198,198,0],"i":[24,0,56,24,24,24,126,0],"j":[12,0,28,12,12,12,12,120],"k":[192,192,198,204,248,204,198,0],"l":[56,24,24,24,24,24,126,0],"m":[0,0,252,182,182,182,182,0],"n":[0,0,252,198,198,198,198,0],"o":[0,0,124,198,198,198,124,0],"p":[0,0,252,198,198,252,192,192],"q":[0,0,126,198,198,126,6,6],"r":[0,0,110,112,96,96,96,0],"s":[0,0,124,192,124,6,252,0],"t":[24,24,126,24,24,24,24,0],"u":[0,0,198,198,198,198,126,0],"v":[0,0,102,102,102,60,24,0],"w":[0,0,214,214,214,214,108,0],"x":[0,0,198,108,56,108,198,0],"y":[0,0,198,198,198,126,6,124],"z":[0,0,254,28,56,112,254,0],"{":[12,24,24,48,24,24,12,0],"|":[24,24,24,24,24,24,24,0],"}":[96,48,48,24,48,48,96,0],"~":[0,0,112,186,28,0,0,0],"А":[56,108,198,198,254,198,198,0],"Б":[252,192,192,252,198,198,252,0],"В":[252,198,198,252,198,198,252,0],"Г":[126,98,96,96,96,96,96,0],"Д":[62,38,38,38,102,102,255,195],"Е":[254,192,192,252,192,192,254,0],"Ж":[214,214,84,56,84,214,214,0],"З":[124,198,6,60,6,198,124,0],"И":[198,198,206,222,246,230,198,0],"Й":[124,0,198,206,222,246,230,0],"К":[198,204,208,248,204,204,198,0],"Л":[62,38,38,38,102,230,198,0],"М":[198,238,254,214,214,198,198,0],"Н":[198,198,198,254,198,198,198,0],"О":[124,198,198,198,198,198,124,0],"П":[254,198,198,198,198,198,198,0],"Р":[252,198,198,198,252,192,192,0],"С":[60,102,192,192,192,102,60,0],"Т":[126,24,24,24,24,24,24,0],"У":[198,198,198,126,6,198,124,0],"Ф":[16,124,214,214,214,124,16,0],"Х":[198,198,108,56,108,198,198,0],"Ц":[204,204,204,204,204,204,254,6],"Ч":[198,198,198,126,6,6,6,0],"Ш":[214,214,214,214,214,214,254,0],"Щ":[214,214,214,214,214,214,255,3],"Ъ":[224,96,124,102,102,102,124,0],"Ы":[198,198,246,214,214,214,246,0],"Ь":[192,192,252,198,198,198,252,0],"Э":[120,204,6,126,6,204,120,0],"Ю":[156,182,182,246,182,182,156,0],"Я":[126,198,198,230,62,102,230,0],"а":[0,0,124,6,126,198,126,0],"б":[126,192,220,230,198,198,124,0],"в":[0,0,252,198,252,198,252,0],"г":[0,0,126,98,96,96,96,0],"д":[0,0,62,38,38,102,255,195],"е":[0,0,124,198,254,192,124,0],"ж":[0,0,214,214,124,214,214,0],"з":[0,0,124,198,28,198,124,0],"и":[0,0,198,206,214,230,198,0],"й":[124,0,198,206,214,230,198,0],"к":[0,0,198,200,252,198,198,0],"л":[0,0,62,38,102,230,198,0],"м":[0,0,198,238,214,214,198,0],"н":[0,0,198,198,254,198,198,0],"о":[0,0,124,198,198,198,124,0],"п":[0,0,254,198,198,198,198,0],"р":[0,0,220,230,198,198,252,192],"с":[0,0,124,198,192,198,124,0],"т":[0,0,126,24,24,24,24,0],"у":[0,0,198,198,198,126,6,124],"ф":[0,16,124,214,214,214,124,16],"х":[0,0,198,108,56,108,198,0],"ц":[0,0,204,204,204,204,254,6],"ч":[0,0,198,198,126,6,6,0],"ш":[0,0,214,214,214,214,254,0],"щ":[0,0,214,214,214,214,255,3],"ъ":[0,0,224,96,124,102,124,0],"ы":[0,0,198,198,246,214,246,0],"ь":[0,0,192,192,252,198,252,0],"э":[0,0,124,198,30,198,124,0],"ю":[0,0,156,182,246,182,156,0],"я":[0,0,126,198,126,198,198,0],"Ё":[108,0,254,192,252,192,254,0],"ё":[108,0,124,198,254,192,124,0],"—":[0,0,0,255,0,0,0,0],"«":[0,54,108,216,108,54,0,0],"»":[0,216,108,54,108,216,0,0]};
+const SRC={"02.01": ["e12ee02eebf5faf8ede9ee"],"02.05": ["f2e9e7e12031393836"],"02.07": ["20bfbfbf202020bfbf2020bf202020bf20bfbfbfbf20bf2020bf20bfbfbf2020"],"02.08": ["20bf2020bf20bf2020bf20bf202020bf20bf2020bf20bf2020bf20bf2020bf20"],"02.09": ["20bf2020bf20bf2020bf20bfbf20bfbf20bf2020bf20bf2020bf20bf2020bf20"],"02.10": ["20bfbfbf2020bf2020bf20bf20bf20bf20bf2020bf20bf2020bf20bfbfbf2020"],"02.11": ["20bf2020bf20bfbfbfbf20bf202020bf20bf2020bf20bf20bfbf20bf20202020"],"02.12": ["20bf2020bf20bf2020bf20bf202020bf20bf2020bf20bfbf20bf20bf20202020"],"02.13": ["20bf2020bf20bf2020bf20bf202020bf20bf2020bf20bf2020bf20bf20202020"],"02.15": ["20bfbfbf2020bf2020bf20bf202020bf20bf2020bf20bf2020bf20bf20202020"],"05.04": ["aab5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5a3"],"05.06": ["b7","b7"],"05.08": ["a6b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b9"],"05.29": ["20"],"10.15": ["f7e1fb2020e8efe4","2020202020202020"],"10.75": ["2008951a97191919191919191b9519"],"10.76": ["20"],"10.77": ["951a19191919961f19191f1f081f1b1b1d971d961d19191e1b1b1c971c96081f19191f191b1b1b1a1a1c1f1b1b1a951908951b1b1b1b1b19191996199519"],"10.78": ["95931a19191919961f19191f1b08081f1b1b1a1a1d1e191d191e1b1b1a1a1c1f1b08081b1b1b1b1a1a1d191b1b1b19951994"],"20.91": ["951a1919961919191e1e1b1b1b1b1b1b1b1c1b0808080808081d081a1a1a1a1a1a1d1d1b97971b1b9692931b1b921e911b191a081d921d931a1a949519"],"20.92": ["2008951a97191919191919191b9519"],"30.50": ["f5f2e120212120f7f920f0efeaede1ece920f7f3e5e820f7e1edf0e9f2eff721"],"50.02": ["20089597191919191919191b9519"],"50.10": ["20"],"50.15": ["412d412d41212121"],"90.05": ["951919191996191e0808081f19191919191b0808080808081f191919191919191b080808080808081b1919191919191f080808081f191919191919191a9519"],"90.10": ["951a1919191996191b081e19191b0808081a080808081b1919191f081b1b1d1b1b08081b1919191c19191919191b080808081e191a9519"],"90.20": ["951a1919961997191919961e080808080808081e1f19191919191a1e191f1e08080808081a1f081e1f19191919191a1e191f1e08080808081a1f081a9519"],"91.04": ["20"],"92.05": ["f0f2e1f7e9ece120e9e7f2f9203a","b5b5b5b5b5b5b5b5b5b5b5b5b5b5"],"92.10": ["27f7e1edf0e9f227202d20fcf4ef20e9e7f2e120eee120f7f9f6e9f7e1eee9e5"],"92.12": ["20f7e1fbe120e3e5ecf82df3f0e1f3f4e9f3f820eff420f7e1edf0e9f2eff72cebeff4eff2f9e520e2f5e4f5f420efe8eff4e9f4f8f3f120eee120f7e1f32e"],"92.13": ["202d20f7f9202020202020","202d20f7e1edf0e9f2"],"92.15": ["2020b12020f7ece5f7ef"],"92.16": ["2020b32020f7f7e5f2e8"],"92.17": ["2020be2020f7f0f2e1f7ef"],"92.18": ["2020ad2020f7eee9fa"],"92.19": ["2020951b1b1b1b1b1b1b961a1a1a1a1a1a1a191919191919191f971f089608081b1b1d1e1e1e1e1b951920204e18eee120ede5f3f4e5"],"92.20": ["20f7f920edeff6e5f4e520f0e5f2e5e4f7e9e7e1f4f820ebe1edeee920","20e9"],"92.21": ["e4efecf6eef920efebf2f5f6e9f4f820e9ede920f7f3e5e820f7e1edf0e92d20f2eff72e"],"92.50": ["f7f7e5e4e9f4e520ebefece9fee5f3f4f7ef20f7e1edf0e9f2eff728312d3529"],"92.51": ["2020202020202020202020202020202020202020202020202020202020202020","20202020202020"],"95.01": ["951a921b1b1b1b1b1b1b1b1b961919191d1a1d1a1d1d191d191d1919191908081f1e1e1e1b1b951991"],"95.02": ["9192951a961b1b1b1b1b1e1b1b1e191a1a1a1a1a1a1a1a1a1f1c1e191997199619191b1b951991"],"95.03": ["92951a191996191b1e1b1e1b1e1e1b1a1a1a1a1a1a1a951991"],"95.04": ["9192951a1b96191919191f1f1b1f1c1d911a1e92199719191d1d961b1b1b1b1b1b1b1c9708961f1b08951991"],"95.05": ["92951a961b1b1b1e1b1b1e1b1e191919191a971a1a1a1a1a1a96911a081b08081a1c08951b19"],"95.06": ["92951a191919961b1b1b1f1b1a1d1a1a1e1e1e1e1b971b1b9691081c1f1f089519"],"95.07": ["95921b1b1b1b1b1b1e961c1a971a1a1a1a1a9619191908081f1e1e1e1b1e1e19971919961c1a1c1c1a1c191e191e1e1b1e1b1e191919951991"],"95.08": ["92951a1b96191997191d961b971a08961b1b1b1b1b1b1b1b1b1f191d1d1a1d971f961a1a1d1a1a1a1a1f081f959119"],"95.09": ["929595951a191919961b1f1f1b1f1b971b1b9691191d1e1e1997921919961a1d1d1a1a1d1a1a1d080897081f961b1b1b1b1b1b1b1c971c1a961c1a1a1c1a951b191991"],"95.10": ["92951a1b19191996191919191b1b1f1f1c1a1c19971991961b1b921b1f97081f961b1e191997081a951991"],"95.11": ["95961b191a1e191d1a1997191996921b1b1b1f1b1b1f1b1f080808081a951991"]};
+
+/* ---------- KOI-8 / BK text ---------- */
+const KOI="юабцдефгхийклмнопярстужвьызшэщчъ";
+function koi(hex){let s="";for(let i=0;i<hex.length;i+=2){const b=parseInt(hex.substr(i,2),16);
+  s+=b>=0xC0?(b<0xE0?KOI[b&31]:KOI[b&31].toUpperCase()):String.fromCharCode(b);}return s;}
+const S=(k,i=0)=>koi(SRC[k][i]);
+
+/* ---------- BK-0010 screen emulation: 32x24 text, 256x240 points ---------- */
+const W=256,H=240,COLS=32;
+const pix=new Uint8Array(W*H);
+let tx=0,ty=0,ink=4,inverted=false,graph=false,pen=0,gx=0,gy=0,dirty=true;
+// colour indices: 0 background, 1 red(221), 2 blue(222), 3 green(223), 4 black(224)
+const PAL_N=[[0,0,0],[255,82,64],[86,128,255],[70,220,110],[0,0,0]];
+const PAL_I=[[226,221,204],[196,38,28],[34,64,190],[24,128,56],[18,18,20]];
+const MOVES={0x08:[-1,0],0x19:[1,0],0x1a:[0,-1],0x1b:[0,1],0x1c:[-1,-1],0x1d:[1,-1],0x1e:[1,1],0x1f:[-1,1]};
+function pset(x,y,c){if(x>=0&&x<W&&y>=0&&y<H){pix[y*W+x]=c;dirty=true;}}
+function clearCell(cx,cy){for(let y=0;y<10;y++)for(let x=0;x<8;x++)pset(cx*8+x,cy*10+y,0);}
+function cls(){pix.fill(0);tx=ty=0;graph=false;dirty=true;}
+function fk(x,y){tx=x;ty=y;}
+function adv(){tx++;if(tx>=COLS){tx=0;ty++;}if(ty>23)ty=23;}
+const PSEUDO={ // 8x10 cell bitmaps for the pseudographics the program uses
+  0xB5:c=>{for(let x=0;x<8;x++)c(x,5);},
+  0xB7:c=>{for(let y=0;y<10;y++)c(3,y);},
+  0xAA:c=>{for(let x=3;x<8;x++)c(x,5);for(let y=5;y<10;y++)c(3,y);},
+  0xA3:c=>{for(let x=0;x<4;x++)c(x,5);for(let y=5;y<10;y++)c(3,y);},
+  0xA6:c=>{for(let x=3;x<8;x++)c(x,5);for(let y=0;y<6;y++)c(3,y);},
+  0xB9:c=>{for(let x=0;x<4;x++)c(x,5);for(let y=0;y<6;y++)c(3,y);},
+  0xBF:c=>{for(let y=0;y<10;y++)for(let x=0;x<8;x++)c(x,y);},
+  0xB1:c=>{for(let x=1;x<7;x++)c(x,5);for(let i=1;i<4;i++){c(1+i,5-i);c(1+i,5+i);}},
+  0xBE:c=>{for(let x=1;x<7;x++)c(x,5);for(let i=1;i<4;i++){c(6-i,5-i);c(6-i,5+i);}},
+  0xB3:c=>{for(let y=2;y<9;y++)c(3,y);for(let i=1;i<4;i++){c(3-i,2+i);c(3+i,2+i);}},
+  0xAD:c=>{for(let y=1;y<8;y++)c(3,y);for(let i=1;i<4;i++){c(3-i,8-i);c(3+i,8-i);}},
+};
+function putChar(ch){
+  const code=ch.charCodeAt(0);
+  clearCell(tx,ty);
+  const ox=tx*8,oy=ty*10;
+  if(PSEUDO[code])PSEUDO[code]((x,y)=>pset(ox+x,oy+y,ink));
+  else if(ch!==" "){const g=FONT[ch]||FONT[ch.toUpperCase()];
+    if(g)for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(g[y]&(128>>x))pset(ox+x,oy+1+y,ink);}
+  adv();
+}
+let beepOn=true,actx=null;
+function beep(f=880,d=.06){if(!beepOn)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain();o.type="square";o.frequency.value=f;g.gain.value=.05;
+  o.connect(g);g.connect(actx.destination);const t=actx.currentTime;o.start(t);g.gain.setValueAtTime(.05,t+d-.01);g.gain.linearRampToValueAtTime(0,t+d);o.stop(t+d);}catch(e){}}
+function out(str){
+  for(const ch of str){const c=ch.charCodeAt(0);
+    if(c===0x95){graph=!graph;pen=0;if(graph){gx=tx*8;gy=ty*10+1;}continue;}
+    if(c===0x96){pen=1;if(graph)pset(gx,gy,ink);continue;}
+    if(c===0x97){pen=2;if(graph)pset(gx,gy,0);continue;}
+    if(c>=0x91&&c<=0x94){ink=c-0x90;continue;}
+    if(c===0x9D){inverted=!inverted;dirty=true;continue;}
+    if(c===0x0C){cls();continue;}
+    if(c===0x07){beep();continue;}
+    if(MOVES[c]){const[dx,dy]=MOVES[c];
+      if(graph){gx+=dx;gy+=dy;if(pen===1)pset(gx,gy,ink);else if(pen===2)pset(gx,gy,0);}
+      else{tx+=dx;ty+=dy;if(tx<0){tx=COLS-1;ty--;}if(tx>=COLS){tx=0;ty++;}ty=Math.max(0,Math.min(23,ty));}
+      continue;}
+    if(c===0x0A){tx=0;ty=Math.min(23,ty+1);continue;}
+    if(c===0x18){c18();continue;}
+    if(c>=0x80&&c<0xA0)continue;          // other mode codes (cursor, 32/64, indicators)
+    if(graph)continue;
+    putChar(ch);
+  }
+}
+function c18(){putChar(" ");}
+const nl=()=>out("\n");
+
+/* ---------- rendering ---------- */
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const off=document.createElement("canvas");off.width=W;off.height=H;const octx=off.getContext("2d");const img=octx.createImageData(W,H);
+function frame(){if(dirty){dirty=false;const P=inverted?PAL_I:PAL_N;const d=img.data;
+  for(let i=0;i<W*H;i++){const p=P[pix[i]];d[i*4]=p[0];d[i*4+1]=p[1];d[i*4+2]=p[2];d[i*4+3]=255;}
+  octx.putImageData(img,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(off,0,0,1024,720);}
+  requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+
+/* ---------- input ---------- */
+let queue=[],waiter=null,gen=0;
+function push(k){if(waiter){const w=waiter;waiter=null;w(k);}else{queue.push(k);if(queue.length>4)queue.shift();}}
+class Abort{}
+function key(){const g=gen;return new Promise((res,rej)=>{if(queue.length)return res(queue.shift());waiter=k=>g===gen?res(k):rej(new Abort);});}
+const sleep=ms=>{const g=gen;return new Promise((res,rej)=>setTimeout(()=>g===gen?res():rej(new Abort),ms));};
+const KEYMAP={ArrowLeft:8,ArrowRight:25,ArrowUp:26,ArrowDown:27,a:8,d:25,w:26,s:27,A:8,D:25,W:26,S:27,h:8,l:25,k:26,j:27};
+addEventListener("keydown",e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;
+  let k=KEYMAP[e.key];if(k===undefined){if(e.key.length===1)k=e.key.charCodeAt(0);else if(e.key==="Enter")k=13;else return;}
+  if(e.target.tagName==="BUTTON"&&(e.key===" "||e.key==="Enter"))return;
+  e.preventDefault();push(k);});
+document.getElementById("screen").addEventListener("click",()=>push(32));
+document.querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click",e=>{push(+b.dataset.k);b.blur();}));
+
+/* ---------- language ---------- */
+let EN=false;try{EN=localStorage.getItem("wampir-lang")==="en";}catch(e){}
+const T=(ru,en)=>EN?en:ru;
+const statusEl=document.getElementById("status");
+const status=(ru,en)=>{statusEl.textContent=T(ru,en);};
+function applyLang(){
+  document.getElementById("lang").textContent=EN?"Русский":"English";
+  document.getElementById("restart").textContent=T("Заново","Restart");
+  document.getElementById("snd").textContent=beepOn?T("Звук вкл","Sound on"):T("Звук выкл","Sound off");
+  document.getElementById("meta").textContent=T("А. Ю. Кузьмин · Рига 1986 · ФОКАЛ","A. Yu. Kuzmin · Riga 1986 · FOCAL");
+  document.getElementById("keys").innerHTML=T(
+    "<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> ход · любая другая клавиша — стоять · <kbd>1</kbd>–<kbd>5</kbd> вампиров",
+    "<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> move · any other key: stay · <kbd>1</kbd>–<kbd>5</kbd> vampires");
+  document.getElementById("notes").innerHTML=T(
+    "<p>Вы ходите на одну клетку; затем каждый вампир шагает к вам, в том числе по диагонали. Если камень мешает вампиру, он пытается шагнуть наугад.</p><p>Толкайте камни (целым рядом, если нужно), чтобы замуровать вампиров. Вампир пойман, когда все восемь соседних клеток — камни или край поля. Победа, когда пойманы все.</p>",
+    "<p>You move one square; then every vampire steps toward you, diagonals included. If a stone blocks a vampire, it tries a random diagonal step instead.</p><p>Push stones (a whole row at once if needed) to wall the vampires in. A vampire is caught when all eight squares around it are stones or the edge of the field. You win when they are all caught.</p>");
+}
+document.getElementById("lang").addEventListener("click",e=>{EN=!EN;try{localStorage.setItem("wampir-lang",EN?"en":"ru");}catch(_){}applyLang();e.currentTarget.blur();restart();});
+document.getElementById("snd").addEventListener("click",e=>{beepOn=!beepOn;e.currentTarget.setAttribute("aria-pressed",beepOn);applyLang();e.currentTarget.blur();});
+document.getElementById("restart").addEventListener("click",e=>{e.currentTarget.blur();restart();});
+
+/* ---------- the program (port of WAMPIR.FOC) ---------- */
+const rnd=n=>Math.floor(Math.random()*n+1);        // FITR(FABS(FRAN())*n+1)
+const rsgn=()=>Math.random()<.5?-1:1;               // FSGN(FRAN())
+const G={vamp:S("20.91"),wipe:S("20.92"),hero:S("10.78"),arms:S("10.77"),stone:S("90.20"),
+  wipeHero:S("10.75"),wipeHero2:S("50.02"),key:(s=>s.slice(2,s.lastIndexOf("\x95")+1))(S("92.19"))};
+async function fx(codes){for(const c of codes){out(String.fromCharCode(c));if(c===0x9D)await sleep(45);else if(c===7)await sleep(70);}}
+
+async function title(){                                          // 01.04 – 04.99
+  inverted=false;out("\x0C\x94\x91");
+  fk(10,1);out(T(S("02.01"),"A.YU.KUZMIN"));
+  fk(11,22);out(T(S("02.05"),"RIGA 1986"));
+  fk(0,6);for(const k of["02.07","02.08","02.09","02.10","02.11","02.12","02.13","02.15"])out(S(k));
+  fk(14,16);out(S("95.01")+S("95.07"));
+  fk(14,17);out(S("95.02")+S("95.04")+S("95.10")+S("95.08"));
+  fk(14,18);out(S("95.03")+S("95.06")+S("95.09"));
+  fk(15,19);out(S("95.05")+S("95.11"));
+  status("Нажмите любую клавишу","Press any key");
+  await key();
+}
+async function rules(){                                          // 05.02, 92.xx
+  out("\x0C\x92\x9D\x94");
+  let n;
+  if(!EN){
+    fk(8,2);out(S("92.05"));fk(8,3);out(S("92.05",1));
+    nl();nl();out(S("92.10"));nl();out(S("92.12"));
+    fk(5,10);out(G.hero+S("92.13")+G.vamp+S("92.13",1));
+    fk(0,12);out(S("92.15"));fk(0,13);out(S("92.16"));fk(0,14);out(S("92.17"));fk(0,15);out(S("92.18"));
+    fk(0,16);out(S("92.19"));
+    fk(0,18);out(S("92.20")+G.stone+S("92.20",1));out(S("92.21"));
+  }else{
+    fk(7,2);out("RULES OF THE GAME:");fk(7,3);out("\xB5".repeat(18));
+    fk(0,5);out("'VAMPIRE' IS A SURVIVAL GAME.");
+    fk(0,6);out(" YOUR GOAL: ESCAPE FROM THE");
+    fk(0,7);out("VAMPIRES WHO WILL HUNT YOU DOWN.");
+    fk(5,10);out(G.hero+" - YOU      "+G.vamp+" - VAMPIRE");
+    fk(0,12);out("  \xB1  LEFT");fk(0,13);out("  \xB3  UP");fk(0,14);out("  \xBE  RIGHT");fk(0,15);out("  \xAD  DOWN");
+    fk(0,16);out("  "+G.key+"\x19  ANY OTHER KEY - STAY");
+    fk(0,18);out(" YOU CAN PUSH STONES "+G.stone+" AND");
+    fk(0,19);out(" MUST WALL IN EVERY VAMPIRE.");
+  }
+  document.getElementById("digits").classList.add("on");
+  status("Сколько вампиров? Нажмите 1–5","How many vampires? Press 1–5");
+  for(;;){                                                       // 92.50 – 92.55
+    fk(0,21);out(T(S("92.50"),"NUMBER OF VAMPIRES (1-5)"));out(":");
+    const k=await key();
+    if(k>=49&&k<=53){n=k-48;out(String(n));await sleep(250);break;}
+    beep(220,.08);
+  }
+  document.getElementById("digits").classList.remove("on");
+  out("\x0C");
+  return n;
+}
+async function game(N){
+  const M=Array.from({length:32},()=>new Array(22).fill(0));
+  const K=[],L=[];
+  status("","");
+  out(S("05.04"));                                               // border
+  for(let i=1;i<=20;i++){fk(0,i);out("\xB7");fk(31,i);out("\xB7");}
+  out(S("05.08"));
+  for(let i=1;i<=20;i++)for(let j=1;j<=8;j++){const x=rnd(29);M[x][i]=1;fk(x,i);out(G.stone);}   // 05.20 stones
+  let X=rnd(29),Y=rnd(19);                                       // 05.25
+  fk(X,Y);out(" ");fk(X,Y);out(G.hero);
+  for(let i=1;i<=N;i++){do K[i]=rnd(29);while(Math.abs(K[i]-X)<=5);L[i]=rnd(19);   // group 91
+    fk(K[i],L[i]);out(" ");fk(K[i],L[i]);out(G.vamp);await sleep(60);}
+  for(let i=1;i<=N;i++)M[K[i]][L[i]]=3;                          // 10.01
+  M[X][Y]=2;
+  for(;;){
+    const X1=X,Y1=Y;let Z1=0,Z2=0;                               // 10.10
+    fk(10,22);out(T(S("10.15"),"YOUR MOVE"));
+    status("Ваш ход","Your move");
+    const k=await key();
+    fk(10,22);out(" ".repeat(9));
+    if(k===8)Z1=-1;else if(k===25)Z1=1;else if(k===26)Z2=-1;else if(k===27)Z2=1;
+    X+=Z1;Y+=Z2;                                                 // 10.50
+    if(X===0||X===31)X=X1;
+    if(Y===0||Y===21)Y=Y1;
+    if(M[X][Y]===1){                                             // 40.xx push stones
+      if(X+Z1===0||X+Z1===31)X=X1;
+      if(Y+Z2===0||Y+Z2===21)Y=Y1;
+      if(M[X][Y+Z2]===3)Y=Y1;
+      if(M[X+Z1][Y]===3)X=X1;
+      let t=1;
+      if(Z1!==0){
+        for(;;){const u=X+Z1*t;
+          if(u===0||u===31){X=X1;break;}
+          if(M[u][Y]===0){t++;break;}
+          if(M[u][Y]===3){X=X1;break;}
+          t++;}
+        for(let r=0;r<t;r++){const u=X+Z1*r;M[u][Y]=1;fk(u,Y);out(G.stone);}
+      }else{
+        for(;;){const u=Y+Z2*t;
+          if(u===0||u===21){Y=Y1;break;}
+          if(M[X][u]===0){t++;break;}
+          if(M[X][u]===3){Y=Y1;break;}
+          t++;}
+        for(let r=0;r<t;r++){const u=Y+Z2*r;M[X][u]=1;fk(X,u);out(G.stone);}
+      }
+    }else if(M[X][Y]===3){return lose(X,Y,X1,Y1,X,Y);}         // 10.72
+    M[X1][Y1]=0;M[X][Y]=2;                                       // 10.74
+    fk(X1,Y1);out(G.wipeHero);
+    fk(X,Y);out(" ");fk(X,Y);out(G.hero);
+    let N2=0;                                                    // 10.80
+    status("Ход вампиров","Vampires move");
+    for(let n1=1;n1<=N;n1++){                                    // 20.xx
+      const K1=K[n1],L1=L[n1];let K2=K1,L2=L1,P=0;
+      K2+=Math.sign(X-K1);L2+=Math.sign(Y-L1);
+      move:for(;;){
+        if(K2===0||K2===31)K2=K1;
+        if(L2===0||L2===21)L2=L1;
+        if(M[K2][L2]===2)return lose(X,Y,X,Y,K1,L1);            // 20.35
+        if(M[K2][L2]!==1)break move;                             // 20.37
+        K2=K1;L2=L1;                                             // 20.39 → 30.05
+        let trapped=true;
+        for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+          if(!dx&&!dy)continue;const a=K2+dx,b=L2+dy;
+          if(a<1||a>30||b<1||b>20)continue;
+          if(M[a][b]!==1)trapped=false;}
+        if(trapped){N2++;if(N2>=N)return win();break move;}
+        if(P===2)break move;                                     // 20.42
+        K2=K1+rsgn();L2=L1+rsgn();P++;                           // 20.46
+      }
+      M[K1][L1]=0;K[n1]=K2;L[n1]=L2;M[K2][L2]=3;                 // 20.60
+      fk(K1,L1);out(G.wipe);fk(K2,L2);out(G.wipe);fk(K2,L2);out(G.vamp);
+      await sleep(110);
+    }
+  }
+}
+async function lose(X,Y,X1,Y1,K1,L1){                            // 50.xx
+  status("Вас съели","You were eaten");
+  fk(X1,Y1);out(G.wipeHero2);
+  for(let i=0;i<=5;i++)await fx([7,145,157,146,157,148]);
+  for(let i=0;i<=9;i++){fk(X,Y);out(G.arms);beep();await sleep(120);fk(X,Y);out(" ");await sleep(80);}
+  if(K1!==X||L1!==Y){fk(K1,L1);out(G.wipe);}
+  fk(X,Y);out(G.wipe);fk(X,Y);out(G.vamp);
+  fk(X+1,Y);out(S("50.15"));
+  await fx([7,7,7,7,7,7]);
+  status("Нажмите любую клавишу дважды","Press any key twice");
+  await key();await key();
+  out("\x9D\x91");
+}
+async function win(){                                            // 30.xx
+  status("Победа!","You won!");
+  await fx([7,7,7,7,7,7]);
+  for(let i=0;i<=4;i++)await fx([147,157,157]);
+  out("\x94");
+  fk(0,22);out(T(S("30.50"),"HOORAY!! ALL VAMPIRES TRAPPED!"));
+  status("Нажмите любую клавишу дважды","Press any key twice");
+  await key();await key();
+  out("\x9D\x9A");
+}
+async function main(){
+  for(;;){
+    try{await title();const n=await rules();await game(n);}
+    catch(e){if(!(e instanceof Abort))throw e;return;}
+  }
+}
+function restart(){gen++;queue=[];if(waiter){const w=waiter;waiter=null;w(-1);}
+  document.getElementById("digits").classList.remove("on");setTimeout(main,0);}
+applyLang();main();
+</script>
